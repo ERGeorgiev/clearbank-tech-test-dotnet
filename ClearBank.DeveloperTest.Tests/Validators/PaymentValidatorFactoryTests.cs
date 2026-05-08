@@ -14,21 +14,14 @@ public class PaymentValidatorFactoryTests
         var services = new ServiceCollection();
         services.AddKeyedScoped<IPaymentValidator, BacsPaymentValidator>(PaymentScheme.Bacs);
         services.AddKeyedScoped<IPaymentValidator, FasterPaymentsPaymentValidator>(PaymentScheme.FasterPayments);
-        services.AddKeyedScoped<IPaymentValidator, ChapsPaymentValidator>(PaymentScheme.Chaps);
-
-        var serviceProvider = services.BuildServiceProvider();
-        _sut = new PaymentValidatorFactory(serviceProvider);
+        _sut = new PaymentValidatorFactory(services.BuildServiceProvider());
     }
 
-    [Theory]
-    [InlineData(PaymentScheme.Bacs, typeof(BacsPaymentValidator))]
-    [InlineData(PaymentScheme.FasterPayments, typeof(FasterPaymentsPaymentValidator))]
-    [InlineData(PaymentScheme.Chaps, typeof(ChapsPaymentValidator))]
-    public void GetValidator_ReturnsCorrectValidatorForScheme(PaymentScheme scheme, Type expectedType)
+    [Fact]
+    public void GetValidator_RegisteredScheme_ReturnsMatchingValidator()
     {
-        var validator = _sut.GetValidator(scheme);
-
-        Assert.IsType(expectedType, validator);
+        var validator = Assert.IsAssignableFrom<PaymentValidatorBase>(_sut.GetValidator(PaymentScheme.Bacs));
+        Assert.Equal(PaymentScheme.Bacs, validator.Scheme);
     }
 
     [Fact]

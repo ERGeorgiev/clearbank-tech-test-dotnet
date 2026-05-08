@@ -14,6 +14,12 @@ public class FasterPaymentsPaymentValidatorTests
     };
 
     [Fact]
+    public void Scheme_ReturnsFasterPayments()
+    {
+        Assert.Equal(PaymentScheme.FasterPayments, _sut.Scheme);
+    }
+
+    [Fact]
     public void IsValid_BalanceLessThanAmount_ReturnsFalse()
     {
         var account = new Account
