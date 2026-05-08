@@ -12,50 +12,30 @@ public class PaymentServiceTests
     private readonly Mock<IAccountDataStore> _dataStoreMock = new();
     private readonly Mock<IAccountDataStoreFactory> _factoryMock = new();
     private readonly Mock<IPaymentValidatorFactory> _validatorFactoryMock = new();
+    private readonly Mock<IPaymentValidator> _validatorMock = new();
     private readonly PaymentService _sut;
+    private readonly Account _account = new() { Balance = 500m };
+    private readonly MakePaymentRequest _request = new()
+    {
+        DebtorAccountNumber = "12345678",
+        Amount = 100m,
+        PaymentScheme = PaymentScheme.Bacs
+    };
 
     public PaymentServiceTests()
     {
         _factoryMock.Setup(f => f.Create()).Returns(_dataStoreMock.Object);
+        _dataStoreMock.Setup(ds => ds.GetAccount(_request.DebtorAccountNumber)).Returns(_account);
+        _validatorFactoryMock.Setup(f => f.GetValidator(It.IsAny<PaymentScheme>())).Returns(_validatorMock.Object);
         _sut = new PaymentService(_factoryMock.Object, _validatorFactoryMock.Object);
     }
-
-    private void SetupAccount(Account account, string accountNumber = "12345678")
-    {
-        _dataStoreMock
-          .Setup(ds => ds.GetAccount(accountNumber))
-                    .Returns(account);
-    }
-
-    private void SetupValidator(PaymentScheme scheme, bool result)
-    {
-        var validatorMock = new Mock<IPaymentValidator>();
-        validatorMock
-            .Setup(v => v.IsValid(It.IsAny<Account>(), It.IsAny<MakePaymentRequest>()))
-            .Returns(result);
-
-        _validatorFactoryMock
-            .Setup(f => f.GetValidator(scheme))
-            .Returns(validatorMock.Object);
-    }
-
-    private static MakePaymentRequest CreateRequest(PaymentScheme scheme = PaymentScheme.Bacs,
-        decimal amount = 100m, string debtorAccountNumber = "12345678") => new()
-        {
-            DebtorAccountNumber = debtorAccountNumber,
-            Amount = amount,
-            PaymentScheme = scheme
-        };
 
     [Fact]
     public void MakePayment_WhenValidationPasses_ReturnsSuccess()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest();
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: true);
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(true);
 
-        var result = _sut.MakePayment(request);
+        var result = _sut.MakePayment(_request);
 
         Assert.True(result.Success);
     }
@@ -63,12 +43,9 @@ public class PaymentServiceTests
     [Fact]
     public void MakePayment_WhenValidationFails_ReturnsFailure()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest();
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: false);
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(false);
 
-        var result = _sut.MakePayment(request);
+        var result = _sut.MakePayment(_request);
 
         Assert.False(result.Success);
     }
@@ -76,38 +53,30 @@ public class PaymentServiceTests
     [Fact]
     public void MakePayment_WhenValidationPasses_DeductsAmountFromBalance()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest(amount: 200m);
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: true);
+        _request.Amount = 200m;
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(true);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
-        Assert.Equal(300m, account.Balance);
+        Assert.Equal(300m, _account.Balance);
     }
 
     [Fact]
     public void MakePayment_WhenValidationPasses_UpdatesAccountInDataStore()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest(amount: 100m);
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: true);
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(true);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
-        _dataStoreMock.Verify(ds => ds.UpdateAccount(account), Times.Once);
+        _dataStoreMock.Verify(ds => ds.UpdateAccount(_account), Times.Once);
     }
 
     [Fact]
     public void MakePayment_WhenValidationFails_DoesNotUpdateAccount()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest();
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: false);
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(false);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
         _dataStoreMock.Verify(ds => ds.UpdateAccount(It.IsAny<Account>()), Times.Never);
     }
@@ -115,37 +84,33 @@ public class PaymentServiceTests
     [Fact]
     public void MakePayment_WhenValidationFails_DoesNotDeductBalance()
     {
-        var account = new Account { Balance = 500m };
-        var request = CreateRequest(amount: 200m);
-        SetupAccount(account);
-        SetupValidator(PaymentScheme.Bacs, result: false);
+        _request.Amount = 200m;
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(false);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
-        Assert.Equal(500m, account.Balance);
+        Assert.Equal(500m, _account.Balance);
     }
 
     [Fact]
     public void MakePayment_LooksUpAccountByDebtorAccountNumber()
     {
-        const string accountNumber = "99999999";
-        var request = CreateRequest(debtorAccountNumber: accountNumber);
-        SetupAccount(new Account(), accountNumber);
-        SetupValidator(PaymentScheme.Bacs, result: false);
+        _request.DebtorAccountNumber = "99999999";
+        _dataStoreMock.Setup(ds => ds.GetAccount("99999999")).Returns(new Account());
+        _validatorMock.Setup(v => v.IsValid(It.IsAny<Account>(), _request)).Returns(false);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
-        _dataStoreMock.Verify(ds => ds.GetAccount(accountNumber), Times.Once);
+        _dataStoreMock.Verify(ds => ds.GetAccount("99999999"), Times.Once);
     }
 
     [Fact]
     public void MakePayment_ResolvesValidatorForCorrectScheme()
     {
-        var request = CreateRequest(scheme: PaymentScheme.Chaps);
-        SetupAccount(new Account());
-        SetupValidator(PaymentScheme.Chaps, result: false);
+        _request.PaymentScheme = PaymentScheme.Chaps;
+        _validatorMock.Setup(v => v.IsValid(_account, _request)).Returns(false);
 
-        _sut.MakePayment(request);
+        _sut.MakePayment(_request);
 
         _validatorFactoryMock.Verify(f => f.GetValidator(PaymentScheme.Chaps), Times.Once);
     }
