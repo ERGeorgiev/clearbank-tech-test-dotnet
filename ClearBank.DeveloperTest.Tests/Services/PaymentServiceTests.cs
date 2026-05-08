@@ -9,15 +9,22 @@ namespace ClearBank.DeveloperTest.Tests.Services;
 
 public class PaymentServiceTests
 {
+    private const string _accNoA = "1";
+    private const string _accNoB = "2";
     private readonly Mock<IAccountDataStore> _dataStoreMock = new();
     private readonly Mock<IAccountDataStoreFactory> _factoryMock = new();
     private readonly Mock<IPaymentValidatorFactory> _validatorFactoryMock = new();
     private readonly Mock<IPaymentValidator> _validatorMock = new();
     private readonly PaymentService _sut;
-    private readonly Account _account = new() { Balance = 500m };
+    private readonly Account _account = new() { 
+        AccountNumber = _accNoA, 
+        AllowedPaymentSchemes = new HashSet<PaymentScheme>(), 
+        Balance = 500m 
+    };
     private readonly MakePaymentRequest _request = new()
     {
-        DebtorAccountNumber = "12345678",
+        CreditorAccountNumber = _accNoA,
+        DebtorAccountNumber = _accNoB,
         Amount = 100m,
         PaymentScheme = PaymentScheme.Bacs
     };
@@ -95,13 +102,14 @@ public class PaymentServiceTests
     [Fact]
     public void MakePayment_LooksUpAccountByDebtorAccountNumber()
     {
-        _request.DebtorAccountNumber = "99999999";
-        _dataStoreMock.Setup(ds => ds.GetAccount("99999999")).Returns(new Account());
+        _request.DebtorAccountNumber = _accNoB;
+        _dataStoreMock.Setup(ds => ds.GetAccount(_accNoB)).Returns(
+            new Account() { AccountNumber = _accNoB, AllowedPaymentSchemes = new HashSet<PaymentScheme>() });
         _validatorMock.Setup(v => v.IsValid(It.IsAny<Account>(), _request)).Returns(false);
 
         _sut.MakePayment(_request);
 
-        _dataStoreMock.Verify(ds => ds.GetAccount("99999999"), Times.Once);
+        _dataStoreMock.Verify(ds => ds.GetAccount(_accNoB), Times.Once);
     }
 
     [Fact]

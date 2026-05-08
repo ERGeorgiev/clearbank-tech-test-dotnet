@@ -1,11 +1,9 @@
-﻿using System.Collections.Generic;
-
-namespace ClearBank.DeveloperTest.Types;
+﻿namespace ClearBank.DeveloperTest.Types;
 
 public class Account
 {
-    public string AccountNumber { get; set; }
+    public required string AccountNumber { get; set; }
     public decimal Balance { get; set; }
     public AccountStatus Status { get; set; }
-    public IReadOnlySet<PaymentScheme> AllowedPaymentSchemes { get; set; }
+    public required IReadOnlySet<PaymentScheme> AllowedPaymentSchemes { get; set; }
 }

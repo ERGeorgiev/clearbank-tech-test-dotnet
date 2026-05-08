@@ -6,6 +6,8 @@ namespace ClearBank.DeveloperTest.Tests.Validators;
 
 public class ChapsPaymentValidatorTests
 {
+    private readonly string _accNoA = "1";
+    private readonly string _accNoB = "2";
     private readonly ChapsPaymentValidator _sut = new();
 
     [Fact]
@@ -19,11 +21,12 @@ public class ChapsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Chaps },
             Status = AccountStatus.Disabled
         };
 
-        var result = _sut.IsValid(account, CreateRequest());
+        var result = _sut.IsValid(account, CreateRequest(_accNoA, _accNoB));
 
         Assert.False(result);
     }
@@ -33,11 +36,12 @@ public class ChapsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Chaps },
             Status = AccountStatus.InboundPaymentsOnly
         };
 
-        var result = _sut.IsValid(account, CreateRequest());
+        var result = _sut.IsValid(account, CreateRequest(_accNoA, _accNoB));
 
         Assert.False(result);
     }
@@ -47,17 +51,20 @@ public class ChapsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Chaps },
             Status = AccountStatus.Live
         };
 
-        var result = _sut.IsValid(account, CreateRequest());
+        var result = _sut.IsValid(account, CreateRequest(_accNoA, _accNoB));
 
         Assert.True(result);
     }
 
-    private static MakePaymentRequest CreateRequest() => new()
+    private static MakePaymentRequest CreateRequest(string creditorNo, string deptorNo) => new()
     {
+        CreditorAccountNumber = creditorNo,
+        DebtorAccountNumber = deptorNo,
         PaymentScheme = PaymentScheme.Chaps
     };
 }

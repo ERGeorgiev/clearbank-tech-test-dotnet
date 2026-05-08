@@ -6,9 +6,13 @@ namespace ClearBank.DeveloperTest.Tests.Validators;
 
 public class FasterPaymentsPaymentValidatorTests
 {
+    private const string _accNoA = "1";
+    private const string _accNoB = "2";
     private readonly FasterPaymentsPaymentValidator _sut = new();
     private readonly MakePaymentRequest _request = new()
     {
+        CreditorAccountNumber = _accNoA,
+        DebtorAccountNumber = _accNoB,
         Amount = 100m,
         PaymentScheme = PaymentScheme.FasterPayments
     };
@@ -24,6 +28,7 @@ public class FasterPaymentsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
             Balance = 50m
         };
@@ -38,6 +43,7 @@ public class FasterPaymentsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
             Balance = 100m
         };
@@ -52,6 +58,7 @@ public class FasterPaymentsPaymentValidatorTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
             Balance = 500m
         };
@@ -67,6 +74,7 @@ public class FasterPaymentsPaymentValidatorTests
         _request.Amount = 0;
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
             Balance = 0
         };

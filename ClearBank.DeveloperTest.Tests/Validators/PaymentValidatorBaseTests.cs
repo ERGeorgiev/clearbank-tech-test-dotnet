@@ -6,8 +6,15 @@ namespace ClearBank.DeveloperTest.Tests.Validators;
 
 public class PaymentValidatorBaseTests
 {
+    private const string _accNoA = "1";
+    private const string _accNoB = "2";
     private readonly BacsPaymentValidator _sut = new();
-    private readonly MakePaymentRequest _requestBacs = new() { PaymentScheme = PaymentScheme.Bacs };
+    private readonly MakePaymentRequest _requestBacs = new()
+    {
+        CreditorAccountNumber = _accNoA,
+        DebtorAccountNumber = _accNoB,
+        PaymentScheme = PaymentScheme.Bacs 
+    };
 
     [Fact]
     public void IsValid_AccountIsNull_ReturnsFalse()
@@ -22,6 +29,7 @@ public class PaymentValidatorBaseTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Chaps }
         };
 
@@ -35,6 +43,7 @@ public class PaymentValidatorBaseTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Bacs }
         };
 
@@ -48,6 +57,7 @@ public class PaymentValidatorBaseTests
     {
         var account = new Account
         {
+            AccountNumber = _accNoA,
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Bacs, PaymentScheme.Chaps }
         };
 
