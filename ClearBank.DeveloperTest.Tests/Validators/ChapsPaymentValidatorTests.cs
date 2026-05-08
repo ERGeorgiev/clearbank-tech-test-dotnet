@@ -9,29 +9,7 @@ public class ChapsPaymentValidatorTests
     private readonly ChapsPaymentValidator _sut = new();
 
     [Fact]
-    public void IsValid_AccountIsNull_ReturnsFalse()
-    {
-        var result = _sut.IsValid(null!, CreateRequest());
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public void IsValid_AccountDoesNotAllowChaps_ReturnsFalse()
-    {
-        var account = new Account
-        {
-            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Bacs },
-            Status = AccountStatus.Live
-        };
-
-        var result = _sut.IsValid(account, CreateRequest());
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public void IsValid_AccountStatusIsDisabled_ReturnsFalse()
+    public void IsValid_StatusIsDisabled_ReturnsFalse()
     {
         var account = new Account
         {
@@ -45,7 +23,7 @@ public class ChapsPaymentValidatorTests
     }
 
     [Fact]
-    public void IsValid_AccountStatusIsInboundPaymentsOnly_ReturnsFalse()
+    public void IsValid_StatusIsInboundPaymentsOnly_ReturnsFalse()
     {
         var account = new Account
         {
@@ -59,7 +37,7 @@ public class ChapsPaymentValidatorTests
     }
 
     [Fact]
-    public void IsValid_AllConditionsMet_ReturnsTrue()
+    public void IsValid_StatusIsLive_ReturnsTrue()
     {
         var account = new Account
         {
@@ -72,22 +50,8 @@ public class ChapsPaymentValidatorTests
         Assert.True(result);
     }
 
-    [Fact]
-    public void IsValid_AccountAllowsMultipleSchemesIncludingChaps_ReturnsTrue()
+    private static MakePaymentRequest CreateRequest() => new()
     {
-        var account = new Account
-        {
-            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Bacs, PaymentScheme.Chaps }
-        };
-
-        var result = _sut.IsValid(account, CreateRequest());
-
-        Assert.True(result);
-    }
-
-    private static MakePaymentRequest CreateRequest(decimal amount = 100m) => new()
-    {
-        Amount = amount,
         PaymentScheme = PaymentScheme.Chaps
     };
 }

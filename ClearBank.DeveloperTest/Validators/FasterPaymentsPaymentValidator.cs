@@ -2,10 +2,11 @@ using ClearBank.DeveloperTest.Types;
 
 namespace ClearBank.DeveloperTest.Validators;
 
-public class FasterPaymentsPaymentValidator : IPaymentValidator
+public class FasterPaymentsPaymentValidator() : PaymentValidatorBase(PaymentScheme.FasterPayments)
 {
-    public bool IsValid(Account account, MakePaymentRequest request)
+    public override bool IsValid(Account account, MakePaymentRequest request)
     {
-
+        return base.IsValid(account, request)
+            && account.Balance >= request.Amount;
     }
 }

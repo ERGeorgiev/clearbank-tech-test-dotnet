@@ -7,28 +7,11 @@ namespace ClearBank.DeveloperTest.Tests.Validators;
 public class FasterPaymentsPaymentValidatorTests
 {
     private readonly FasterPaymentsPaymentValidator _sut = new();
-
-    [Fact]
-    public void IsValid_AccountIsNull_ReturnsFalse()
+    private readonly MakePaymentRequest _request = new()
     {
-        var result = _sut.IsValid(null!, CreateRequest());
-
-        Assert.False(result);
-    }
-
-    [Fact]
-    public void IsValid_AccountDoesNotAllowFasterPayments_ReturnsFalse()
-    {
-        var account = new Account
-        {
-            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.Bacs },
-            Balance = 500m
-        };
-
-        var result = _sut.IsValid(account, CreateRequest());
-
-        Assert.False(result);
-    }
+        Amount = 100m,
+        PaymentScheme = PaymentScheme.FasterPayments
+    };
 
     [Fact]
     public void IsValid_BalanceLessThanAmount_ReturnsFalse()
@@ -39,36 +22,9 @@ public class FasterPaymentsPaymentValidatorTests
             Balance = 50m
         };
 
-        var result = _sut.IsValid(account, CreateRequest(amount: 100m));
+        var result = _sut.IsValid(account, _request);
 
         Assert.False(result);
-    }
-
-    [Fact]
-    public void IsValid_AllConditionsMet_ReturnsTrue()
-    {
-        var account = new Account
-        {
-            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
-            Balance = 500m
-        };
-
-        var result = _sut.IsValid(account, CreateRequest(amount: 100m));
-
-        Assert.True(result);
-    }
-
-    [Fact]
-    public void IsValid_AccountAllowsMultipleSchemesIncludingChaps_ReturnsTrue()
-    {
-        var account = new Account
-        {
-            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments, PaymentScheme.Chaps }
-        };
-
-        var result = _sut.IsValid(account, CreateRequest());
-
-        Assert.True(result);
     }
 
     [Fact]
@@ -80,7 +36,21 @@ public class FasterPaymentsPaymentValidatorTests
             Balance = 100m
         };
 
-        var result = _sut.IsValid(account, CreateRequest(amount: 100m));
+        var result = _sut.IsValid(account, _request);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsValid_BalanceGreaterThanAmount_ReturnsTrue()
+    {
+        var account = new Account
+        {
+            AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
+            Balance = 500m
+        };
+
+        var result = _sut.IsValid(account, _request);
 
         Assert.True(result);
     }
@@ -88,20 +58,15 @@ public class FasterPaymentsPaymentValidatorTests
     [Fact]
     public void IsValid_BalanceAndAmountAreZero_ReturnsTrue()
     {
+        _request.Amount = 0;
         var account = new Account
         {
             AllowedPaymentSchemes = new HashSet<PaymentScheme> { PaymentScheme.FasterPayments },
             Balance = 0
         };
 
-        var result = _sut.IsValid(account, CreateRequest(amount: 0));
+        var result = _sut.IsValid(account, _request);
 
         Assert.True(result);
     }
-
-    private static MakePaymentRequest CreateRequest(decimal amount = 100m) => new()
-    {
-        Amount = amount,
-        PaymentScheme = PaymentScheme.FasterPayments
-    };
 }
