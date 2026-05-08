@@ -9,5 +9,7 @@ internal class AccountDataStoreFactory(IServiceProvider serviceProvider, IConfig
 {
     public IAccountDataStore Create()
     {
+        var dataStoreType = Enum.Parse<DataStoreType>(config["DataStoreType"] ?? nameof(DataStoreType.Default));
+        return serviceProvider.GetRequiredKeyedService<IAccountDataStore>(dataStoreType);
     }
 }
